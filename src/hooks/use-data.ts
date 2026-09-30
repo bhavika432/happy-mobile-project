@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null);
@@ -41,7 +42,7 @@ export const menuQuery = queryOptions({
   },
 });
 
-export type MenuItem = Awaited<ReturnType<typeof menuQuery.queryFn & {}>>["items"][number];
+export type MenuItem = Database["public"]["Tables"]["menu_items"]["Row"];
 
 /** Keeps the menu live: any stock or price change refreshes every open menu within a second. */
 export function useLiveMenu() {
