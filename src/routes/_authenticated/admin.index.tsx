@@ -53,16 +53,16 @@ function Board() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, order_items(item_name, qty), profiles:user_id(full_name, phone)")
+        .select("*, order_items(item_name, qty)")
         .in("status", ["paid", "accepted", "preparing", "ready"])
         .order("placed_at");
-      if (error) {
-        // profiles join may be unavailable; fall back without it
-        const r = await supabase.from("orders").select("*, order_items(item_name, qty)").in("status", ["paid", "accepted", "preparing", "ready"]).order("placed_at");
-        if (r.error) throw r.error;
-        return r.data.map((o) => ({ ...o, profiles: null as { full_name: string | null } | null }));
-      }
-      return data as unknown as (typeof data[number] & { profiles: { full_name: string | null } | null })[];
+      if (error) throw error;
+      const ids = [...new Set(data.map((o) => o.user_id))];
+      const { data: profs } = ids.length
+        ? await supabase.from("profiles").select("id, full_name, phone").in("id", ids)
+        : { data: [] };
+      const byId = new Map((profs ?? []).map((p) => [p.id, p]));
+      return data.map((o) => ({ ...o, profiles: byId.get(o.user_id) ?? null }));
     },
   });
 
