@@ -51,11 +51,11 @@ function AuthPage() {
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
-    if (phone.replace(/\D/g, "").length < 10) return toast.error("Enter a valid mobile number");
+    if (phone.replace(/\D/g, "").length < 10) { toast.error("Enter a valid mobile number"); return; }
     setBusy(true);
     const { error } = await supabase.auth.signInWithOtp({ phone: fullPhone() });
     setBusy(false);
-    if (error) return toast.error(errMsg(error));
+    if (error) { toast.error(errMsg(error)); return; }
     setSent(true);
     toast.success("Code sent by SMS");
   }

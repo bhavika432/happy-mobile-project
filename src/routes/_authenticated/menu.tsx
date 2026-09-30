@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/_authenticated/menu")({
-  validateSearch: (s: Record<string, unknown>): { cart?: boolean } => (s.cart ? { cart: true } : {}),
+  validateSearch: (s: Record<string, unknown>): { cart?: boolean } => (s["cart"] ? { cart: true } : {}),
   head: () => ({
     meta: [
       { title: "Menu | QuickBite" },

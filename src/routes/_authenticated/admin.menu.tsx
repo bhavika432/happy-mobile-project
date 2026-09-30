@@ -45,7 +45,10 @@ function MenuManager() {
     const { error } = draft.id
       ? await supabase.from("menu_items").update(row).eq("id", draft.id)
       : await supabase.from("menu_items").insert(row);
-    if (error) return toast.error(errMsg(error));
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
     toast.success("Saved");
     setDraft(null);
     qc.invalidateQueries({ queryKey: ["menu"] });
