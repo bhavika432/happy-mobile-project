@@ -272,9 +272,9 @@ function CartSheet({
                 <span>{quote.data ? inr(quote.data.total) : "—"}</span>
               </div>
               <Button className="h-12 w-full rounded-xl text-base" disabled={placing || available.length === 0 || !quote.data} onClick={place}>
-                {placing ? "Placing order…" : "Place order"}
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">Pay at the counter for now — in-app payment is coming soon.</p>
+                {placing ? "Starting checkout…" : "Continue to payment"}
+...
+              <p className="text-center text-xs text-muted-foreground">You'll have 10 minutes to pay. The kitchen starts once payment is confirmed.</p>
             </div>
           </>
         )}
