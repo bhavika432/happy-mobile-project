@@ -110,6 +110,7 @@ export type Database = {
         Row: {
           id: string
           item_name: string
+          item_status: string
           menu_item_id: string | null
           order_id: string
           qty: number
@@ -118,6 +119,7 @@ export type Database = {
         Insert: {
           id?: string
           item_name: string
+          item_status?: string
           menu_item_id?: string | null
           order_id: string
           qty: number
@@ -126,6 +128,7 @@ export type Database = {
         Update: {
           id?: string
           item_name?: string
+          item_status?: string
           menu_item_id?: string | null
           order_id?: string
           qty?: number
@@ -186,13 +189,17 @@ export type Database = {
       orders: {
         Row: {
           accepted_at: string | null
+          base_prep_minutes: number
           collected_at: string | null
           est_pickup_at: string
           est_prep_minutes: number
+          expires_at: string | null
           id: string
+          idempotency_key: string | null
           order_number: number
           placed_at: string
           ready_at: string | null
+          refunded_amount: number
           status: Database["public"]["Enums"]["order_status"]
           total: number
           updated_at: string
@@ -200,13 +207,17 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          base_prep_minutes?: number
           collected_at?: string | null
           est_pickup_at: string
           est_prep_minutes: number
+          expires_at?: string | null
           id?: string
+          idempotency_key?: string | null
           order_number?: number
           placed_at?: string
           ready_at?: string | null
+          refunded_amount?: number
           status?: Database["public"]["Enums"]["order_status"]
           total: number
           updated_at?: string
@@ -214,19 +225,99 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          base_prep_minutes?: number
           collected_at?: string | null
           est_pickup_at?: string
           est_prep_minutes?: number
+          expires_at?: string | null
           id?: string
+          idempotency_key?: string | null
           order_number?: number
           placed_at?: string
           ready_at?: string | null
+          refunded_amount?: number
           status?: Database["public"]["Enums"]["order_status"]
           total?: number
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      payment_issues: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          kind: string
+          order_id: string | null
+          resolved: boolean
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          kind: string
+          order_id?: string | null
+          resolved?: boolean
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          kind?: string
+          order_id?: string | null
+          resolved?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_issues_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          gateway_ref: string | null
+          id: string
+          method: string | null
+          order_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          gateway_ref?: string | null
+          id?: string
+          method?: string | null
+          order_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          gateway_ref?: string | null
+          id?: string
+          method?: string | null
+          order_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -249,6 +340,54 @@ export type Database = {
         }
         Relationships: []
       }
+      refunds: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          order_id: string
+          order_item_id: string | null
+          reason: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id: string
+          order_item_id?: string | null
+          reason: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string
+          order_item_id?: string | null
+          reason?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -267,11 +406,41 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          event_id: string
+          payload: Json
+          received_at: string
+        }
+        Insert: {
+          event_id: string
+          payload: Json
+          received_at?: string
+        }
+        Update: {
+          event_id?: string
+          payload?: Json
+          received_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      apply_payment_event: {
+        Args: {
+          _amount: number
+          _event_id: string
+          _gateway_ref: string
+          _method: string
+          _order_id: string
+          _payload: Json
+          _status: string
+        }
+        Returns: string
+      }
       compute_estimate: {
         Args: { _base_prep: number }
         Returns: {
@@ -279,6 +448,11 @@ export type Database = {
           est_prep: number
         }[]
       }
+      create_checkout: {
+        Args: { _idem: string; _items: Json }
+        Returns: string
+      }
+      expire_unpaid_orders: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -288,6 +462,12 @@ export type Database = {
       }
       place_order: { Args: { _items: Json }; Returns: string }
       quote_order: { Args: { _items: Json }; Returns: Json }
+      recalc_open_etas: { Args: never; Returns: undefined }
+      reconcile_payments: { Args: never; Returns: number }
+      refund_order_item: {
+        Args: { _order_item_id: string }
+        Returns: undefined
+      }
       set_order_status: {
         Args: {
           _order_id: string
