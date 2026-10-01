@@ -200,9 +200,11 @@ function CartSheet({
     },
   });
 
+  // One key per checkout attempt: double taps or retries never create two orders.
+  const [idem, setIdem] = useState(() => crypto.randomUUID());
   async function place() {
     setPlacing(true);
-    const { data, error } = await supabase.rpc("place_order", { _items: available });
+    const { data, error } = await supabase.rpc("create_checkout", { _items: available, _idem: idem });
     setPlacing(false);
     if (error) {
       toast.error(errMsg(error));
@@ -210,9 +212,9 @@ function CartSheet({
       return;
     }
     cart.clear();
+    setIdem(crypto.randomUUID());
     qc.invalidateQueries({ queryKey: ["orders"] });
-    toast.success("Order placed!");
-    navigate({ to: "/orders/$orderId", params: { orderId: data as string } });
+    navigate({ to: "/pay/$orderId", params: { orderId: data as string } });
   }
 
   return (
@@ -270,9 +272,9 @@ function CartSheet({
                 <span>{quote.data ? inr(quote.data.total) : "—"}</span>
               </div>
               <Button className="h-12 w-full rounded-xl text-base" disabled={placing || available.length === 0 || !quote.data} onClick={place}>
-                {placing ? "Placing order…" : "Place order"}
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">Pay at the counter for now — in-app payment is coming soon.</p>
+                {placing ? "Starting checkout…" : "Continue to payment"}
+...
+              <p className="text-center text-xs text-muted-foreground">You'll have 10 minutes to pay. The kitchen starts once payment is confirmed.</p>
             </div>
           </>
         )}
