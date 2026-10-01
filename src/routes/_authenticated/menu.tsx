@@ -200,9 +200,11 @@ function CartSheet({
     },
   });
 
+  // One key per checkout attempt: double taps or retries never create two orders.
+  const [idem, setIdem] = useState(() => crypto.randomUUID());
   async function place() {
     setPlacing(true);
-    const { data, error } = await supabase.rpc("place_order", { _items: available });
+    const { data, error } = await supabase.rpc("create_checkout", { _items: available, _idem: idem });
     setPlacing(false);
     if (error) {
       toast.error(errMsg(error));
@@ -210,9 +212,9 @@ function CartSheet({
       return;
     }
     cart.clear();
+    setIdem(crypto.randomUUID());
     qc.invalidateQueries({ queryKey: ["orders"] });
-    toast.success("Order placed!");
-    navigate({ to: "/orders/$orderId", params: { orderId: data as string } });
+    navigate({ to: "/pay/$orderId", params: { orderId: data as string } });
   }
 
   return (
